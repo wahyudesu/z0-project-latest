@@ -116,37 +116,13 @@ export default {
 				}
 			}
 
-			if (text?.startsWith('/presensi') && chatId) {
+			if (text?.startsWith('/tagall') && chatId) {
 				try {
 					const mentionResult = await mentionAll(baseUrl, session, chatId, APIkey);
 					return new Response(JSON.stringify({ status: 'mention sent', result: mentionResult }), {
 						status: 200,
 						headers: { 'Content-Type': 'application/json', ...corsHeaders },
 					});
-				} catch (e: any) {
-					return new Response(JSON.stringify({ error: e.message }), {
-						status: 500,
-						headers: { 'Content-Type': 'application/json', ...corsHeaders },
-					});
-				}
-			}
-
-			if (chatId && text === '/malam' && reply_to && PersonalIds.includes(participant)) {
-				try {
-					const result = await basicCommands(baseUrl, session, APIkey, chatId, reply_to, '/malam');
-					return new Response(JSON.stringify(result), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
-				} catch (e: any) {
-					return new Response(JSON.stringify({ error: e.message }), {
-						status: 500,
-						headers: { 'Content-Type': 'application/json', ...corsHeaders },
-					});
-				}
-			}
-
-			if (chatId && text === '/pagi' && reply_to && PersonalIds.includes(participant)) {
-				try {
-					const result = await basicCommands(baseUrl, session, APIkey, chatId, reply_to, '/pagi');
-					return new Response(JSON.stringify(result), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
 				} catch (e: any) {
 					return new Response(JSON.stringify({ error: e.message }), {
 						status: 500,
