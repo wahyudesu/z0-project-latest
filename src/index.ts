@@ -10,6 +10,7 @@ import {
 	getToxicWarning,
 	handleDevInfo,
 } from './functions';
+import pantunList from './data/pantun.json';
 // import assignmentCron from './cron/assignment-cron';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 
@@ -48,49 +49,49 @@ export default {
 
 			console.log('Received event:', JSON.stringify(data));
 
-			// // Handle group join events
-			// if (data.event === "group.v2.participants") {
-			//   const groupPayload = data.payload;
-			//   if (groupPayload.type === "join" && groupPayload.group && groupPayload.participants) {
-			//     const groupId = groupPayload.group.id;
-			//     const joinedParticipants = groupPayload.participants;
-
-			//     for (const participant of joinedParticipants) {
-			//       const participantId = participant.id;
-			//       const welcomeMessage = `🎉 Selamat datang @${participantId.replace("@c.us", "")} di grup ini!\n\nSemoga betah dan aktif ya! 😊`;
-
-			//       try {
-			//         await fetch(baseUrl + "/api/sendText", {
-			//           method: "POST",
-			//           headers: {
-			//             "accept": "application/json",
-			//             "Content-Type": "application/json",
-			//             "X-Api-Key": APIkey,
-			//           },
-			//           body: JSON.stringify({
-			//             chatId: groupId,
-			//             text: welcomeMessage,
-			//             session: session,
-			//             mentions: [participantId],
-			//           }),
-			//         });
-			//       } catch (error) {
-			//         console.error("Error sending welcome message:", error);
-			//       }
-			//     }
-
-			//     return new Response(JSON.stringify({ status: "welcome message sent" }), {
-			//       status: 200,
-			//       headers: { "Content-Type": "application/json", ...corsHeaders }
-			//     });
-			//   }
-			// }
-
 			const payload = data.payload || {};
 			const chatId = payload.from;
 			const text = payload.body;
 			const participant = payload.participant;
 			const reply_to = payload.id;
+			
+			// Handle group join events
+			if (data.event === "group.v2.participants") {
+			  const groupPayload = data.payload;
+			  if (groupPayload.type === "join" && groupPayload.group && groupPayload.participants) {
+				const groupId = groupPayload.group.id;
+				const joinedParticipants = groupPayload.participants;
+
+				for (const participant of joinedParticipants) {
+				  const participantId = participant.id;
+				  const welcomeMessage = `👋 Selamat datang @${participantId.replace("@c.us", "")}!\n\nSemoga betah dan aktif ya! 😊`;
+
+				  try {
+					await fetch(baseUrl + "/api/sendText", {
+					  method: "POST",
+					  headers: {
+						"accept": "application/json",
+						"Content-Type": "application/json",
+						"X-Api-Key": APIkey,
+					  },
+					  body: JSON.stringify({
+						chatId: groupId,
+						text: welcomeMessage,
+						session: session,
+						mentions: [participantId],
+					  }),
+					});
+				  } catch (error) {
+					console.error("Error sending welcome message:", error);
+				  }
+				}
+
+				return new Response(JSON.stringify({ status: "welcome message sent" }), {
+				  status: 200,
+				  headers: { "Content-Type": "application/json", ...corsHeaders }
+				});
+			  }
+			}
 
 			// Deteksi toxic sebelum proses lain
 			if (text) {
@@ -212,6 +213,42 @@ export default {
 
 					const apiResult = await apiResp.text();
 					return new Response(JSON.stringify({ status: 'sent', sent: bodyData, apiResult }), {
+						status: 200,
+						headers: { 'Content-Type': 'application/json', ...corsHeaders },
+					});
+				} catch (e: any) {
+					return new Response(JSON.stringify({ error: e.message }), {
+						status: 500,
+						headers: { 'Content-Type': 'application/json', ...corsHeaders },
+					});
+				}
+			}
+
+			// Command /pantun
+			if (text === '/pantun' && chatId && reply_to) {
+				try {
+					// Ambil pantun acak
+					const pantunArr = pantunList;
+					const idx = Math.floor(Math.random() * pantunArr.length);
+					const pantun = pantunArr[idx];
+					// Gabungkan baris pantun
+					const pantunText = pantun.map(bait => bait.join('\n')).join('\n\n');
+
+					await fetch(baseUrl + '/api/sendText', {
+						method: 'POST',
+						headers: {
+							accept: 'application/json',
+							'Content-Type': 'application/json',
+							'X-Api-Key': APIkey,
+						},
+						body: JSON.stringify({
+							chatId: chatId,
+							reply_to: reply_to,
+							text: pantunText,
+							session: session,
+						}),
+					});
+					return new Response(JSON.stringify({ status: 'pantun sent', pantun: pantunText }), {
 						status: 200,
 						headers: { 'Content-Type': 'application/json', ...corsHeaders },
 					});

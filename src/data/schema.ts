@@ -53,3 +53,4 @@ export const note_group = pgTable('note_group', {
 	updated_at: date('updated_at'),
 	group_id: varchar('group_id', { length: 50 }).references(() => group.id),
 });
+
