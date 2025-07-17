@@ -30,6 +30,7 @@ export const group = pgTable('group', {
 export const participant_group = pgTable('participant_group', {
 	id: varchar('id', { length: 50 }).primaryKey(),
 	no: varchar('no', { length: 15 }),
+	role: varchar('participant', { length: 15 }),
 	sum_message: varchar('sum_message', { length: 255 }),
 	country: varchar('country', { length: 50 }),
 	group_id: varchar('group_id', { length: 50 }).references(() => group.id),
