@@ -1,7 +1,7 @@
 import { Agent } from 'agents';
 import { generateText } from 'ai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
-import { D1AssignmentManager } from '../db/d1Helpers';
+// import { D1AssignmentManager } from '../db/d1Helpers';
 import { getWorkerEnv } from '../config/env';
 import { generateObject } from 'ai';
 import { z } from 'zod';
@@ -21,14 +21,14 @@ export class MyAgent extends Agent<Env> {
 		// @ts-ignore
 		const { openrouterKey } = await getWorkerEnv(env);
 		const env: Env = (request as any).env;
-		const db = env['db-tugas'];
-		const manager = new D1AssignmentManager(db);
-		const assignments = await manager.getAllAssignments();
+		// const db = env['db-tugas'];
+		// const manager = new D1AssignmentManager(db);
+		// const assignments = await manager.getAllAssignments();
 
 		// Jadikan assignments sebagai context untuk LLM
-		const contextString = assignments
-			.map((a) => `- [${a.mata_kuliah}] ${a.deskripsi} (Deadline: ${a.deadline || '-'} | By: ${a.participant})`)
-			.join('\n');
+		// const contextString = assignments
+		// 	.map((a) => `- [${a.mata_kuliah}] ${a.deskripsi} (Deadline: ${a.deadline || '-'} | By: ${a.participant})`)
+		// 	.join('\n');
 
 		const openrouter = createOpenRouter({
 			apiKey: openrouterKey,
@@ -44,7 +44,7 @@ export class MyAgent extends Agent<Env> {
 				'Jawab pertanyaan user dengan informasi yang relevan dari daftar tugas yang ada di database.' +
 				'Jika tidak ada informasi yang relevan, berikan jawaban umum yang sesuai.' +
 				'Jawab sesingkat mungkin, tidak lebih dari 50 kata',
-			prompt: `Berikut adalah daftar tugas di database:\n${contextString}\n\nJawab pertanyaan user atau bantu sesuai konteks tugas di atas.`,
+			prompt: `Berikut adalah daftar tugas di database:Jawab pertanyaan user atau bantu sesuai konteks tugas di atas.`,
 		});
 
 		// Post-process: ganti ** jadi *, hapus semua baris yang hanya berisi pagra
@@ -54,6 +54,6 @@ export class MyAgent extends Agent<Env> {
 			.replace(/\n{2,}/g, '\n') // rapikan double newline
 			.trim();
 
-		return Response.json({ modelResponse: { ...result, tugas }, assignments });
+		return Response.json({ modelResponse: { ...result, tugas } });
 	}
 }
