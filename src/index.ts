@@ -2,15 +2,15 @@ import { getWorkerEnv, PersonalIds } from './config/env';
 import {
 	mentionAll,
 	basicCommands,
-	handleTambahTugas,
-	handleLihatTugas,
-	handleHapusTugas,
-	handleHelp,
+	// handleTambahTugas,
+	// handleLihatTugas,
+	// handleHapusTugas,
+	// handleHelp,
 	checkToxic,
 	getToxicWarning,
 	handleDevInfo,
 } from './functions';
-import assignmentCron from './cron/assignment-cron';
+// import assignmentCron from './cron/assignment-cron';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 
 import { generateObject } from 'ai';
@@ -153,43 +153,6 @@ export default {
 				}
 			}
 
-			if (text?.startsWith('/tugas') && chatId && reply_to && PersonalIds.includes(participant)) {
-				try {
-					const result = await handleTambahTugas(baseUrl, session, APIkey, chatId, reply_to, text, participant, env['db-tugas']);
-					return new Response(JSON.stringify(result), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
-				} catch (e: any) {
-					return new Response(JSON.stringify({ error: e.message }), {
-						status: 500,
-						headers: { 'Content-Type': 'application/json', ...corsHeaders },
-					});
-				}
-			}
-
-			if (text === '/list-tugas' && chatId && reply_to && PersonalIds.includes(participant)) {
-				try {
-					const result = await handleLihatTugas(baseUrl, session, APIkey, chatId, reply_to, participant, env['db-tugas']);
-					return new Response(JSON.stringify(result), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
-				} catch (e: any) {
-					return new Response(JSON.stringify({ error: e.message }), {
-						status: 500,
-						headers: { 'Content-Type': 'application/json', ...corsHeaders },
-					});
-				}
-			}
-
-			if (text?.startsWith('/hapus ') && chatId && reply_to && PersonalIds.includes(participant)) {
-				try {
-					const namaTugas = text.replace('/hapus ', '').trim();
-					const result = await handleHapusTugas(baseUrl, session, APIkey, chatId, reply_to, namaTugas, env['db-tugas']);
-					return new Response(JSON.stringify(result), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
-				} catch (e: any) {
-					return new Response(JSON.stringify({ error: e.message }), {
-						status: 500,
-						headers: { 'Content-Type': 'application/json', ...corsHeaders },
-					});
-				}
-			}
-
 			if (text === '/help' && chatId && reply_to) {
 				try {
 					const result = await handleHelp(baseUrl, session, APIkey, chatId, reply_to);
@@ -287,13 +250,35 @@ export default {
 		return new Response('Not found', { status: 404, headers: corsHeaders });
 	},
 
-	async scheduled(event: any, env: any, ctx: ExecutionContext): Promise<void> {
-		try {
-			// Assignment reminder cron - hanya kirim reminder tugas yang deadline hari ini dan hapus yang sudah lewat
-			await assignmentCron.scheduled(event, env, ctx);
-			console.log('Assignment cron executed successfully');
-		} catch (error) {
-			console.error('Assignment cron failed:', error);
-		}
-	},
 };
+async function handleHelp(baseUrl: string, session: string, APIkey: string, chatId: string, reply_to: string) {
+	const helpText = [
+		'🤖 *Daftar Perintah Bot*',
+		'',
+		'/presensi - Mention semua anggota grup',
+		'/malam - Kirim ucapan selamat malam (khusus admin)',
+		'/pagi - Kirim ucapan selamat pagi (khusus admin)',
+		'/ai <pertanyaan> - Tanya AI tentang tugas/kuliah',
+		'/dev - Info developer',
+		'/help - Tampilkan bantuan ini',
+	].join('\n');
+
+	const resp = await fetch(baseUrl + '/api/sendText', {
+		method: 'POST',
+		headers: {
+			accept: 'application/json',
+			'Content-Type': 'application/json',
+			'X-Api-Key': APIkey,
+		},
+		body: JSON.stringify({
+			chatId,
+			reply_to,
+			text: helpText,
+			session,
+		}),
+	});
+
+	const result = await resp.json();
+	return { status: 'help sent', result };
+}
+
