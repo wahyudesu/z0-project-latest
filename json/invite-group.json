@@ -1,0 +1,51 @@
+{
+  "payload": {
+    "id": "false_6285174346212@c.us_3FC6FEC598760E7DB87A",
+    "timestamp": 1752661322,
+    "from": "6285174346212@c.us",
+    "fromMe": false,
+    "source": "app",
+    "body": "https://chat.whatsapp.com/GGWhhVDnkfV5z6s4awuYaP?mode=ac_c",
+    "hasMedia": false,
+    "media": null,
+    "ack": 2,
+    "ackName": "DEVICE",
+    "replyTo": null,
+    "_data": {
+      "key": {
+        "remoteJid": "6285174346212@s.whatsapp.net",
+        "fromMe": false,
+        "id": "3FC6FEC598760E7DB87A"
+      },
+      "messageTimestamp": 1752661322,
+      "pushName": "Wahyu Ikbal",
+      "broadcast": false,
+      "message": {
+        "extendedTextMessage": {
+          "text": "https://chat.whatsapp.com/GGWhhVDnkfV5z6s4awuYaP?mode=ac_c",
+          "matchedText": "https://chat.whatsapp.com/GGWhhVDnkfV5z6s4awuYaP?mode=ac_c",
+          "description": "WhatsApp Group Invite",
+          "title": "bot baru",
+          "contextInfo": {
+            "expiration": 0,
+            "ephemeralSettingTimestamp": "0",
+            "disappearingMode": {
+              "initiator": "CHANGED_IN_CHAT"
+            }
+          }
+        },
+        "messageContextInfo": {
+          "deviceListMetadata": {
+            "senderKeyHash": "YGnhoaUsOZFnMg==",
+            "senderTimestamp": "1752116792",
+            "recipientKeyHash": "YKR2NAWAD9iI0Q==",
+            "recipientTimestamp": "1751657023"
+          },
+          "deviceListMetadataVersion": 2
+        }
+      },
+      "verifiedBizName": "Wahyu Ikbal",
+      "status": 3
+    }
+  }
+}

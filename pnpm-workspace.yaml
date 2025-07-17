@@ -1,9 +1,0 @@
-packages:
-  - src
-  - packages/*
-
-onlyBuiltDependencies:
-  - esbuild
-  - protobufjs
-  - sharp
-  - workerd
