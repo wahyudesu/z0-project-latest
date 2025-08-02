@@ -343,7 +343,7 @@ export default {
 
 					let msg;
 					if (typeof priceUsd === 'number' && typeof priceIdr === 'number') {
-						msg = `💰 Harga Bitcoin saat ini:\nIDR: Rp${priceIdr.toLocaleString('id-ID')}\nUSD: $${priceUsd}`;
+						msg = `💰 Harga Bitcoin saat ini:\nIDR: Rp${priceIdr.toLocaleString('id-ID')}\nUSD: $${priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 					} else {
 						msg = 'Gagal mengambil harga Bitcoin.';
 					}
