@@ -255,11 +255,7 @@ export default {
 						body: JSON.stringify({
 							chatId: chatId,
 							header: "How are you?",
-								"headerImage": {
-									"mimetype": "image/jpeg",
-									"filename": "filename.jpg",
-									"url": "https://github.com/devlikeapro/waha/raw/core/examples/waha.jpg"
-								},
+							body: "Tell us how are you please 🙏",
 							footer: "If you have any questions, please send it in the chat",
 							buttons: [
 								{
@@ -335,12 +331,19 @@ export default {
 			// Command /bitcoin
 			if (text === '/bitcoin' && chatId && reply_to) {
 				try {
-					const resp = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
-					const data: { bitcoin?: { usd?: number } } = await resp.json();
-					const price = data && data.bitcoin && typeof data.bitcoin.usd === 'number' ? data.bitcoin.usd : undefined;
+					// Fetch USD price
+					const respUsd = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
+					const dataUsd: { bitcoin?: { usd?: number } } = await respUsd.json();
+					const priceUsd = dataUsd?.bitcoin?.usd;
+
+					// Fetch IDR price
+					const respIdr = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=idr');
+					const dataIdr: { bitcoin?: { idr?: number } } = await respIdr.json();
+					const priceIdr = dataIdr?.bitcoin?.idr;
+
 					let msg;
-					if (price !== undefined) {
-						msg = `💰 Harga Bitcoin saat ini: $${price} USD`;
+					if (typeof priceUsd === 'number' && typeof priceIdr === 'number') {
+						msg = `💰 Harga Bitcoin saat ini:\nIDR: Rp${priceIdr.toLocaleString('id-ID')}\nUSD: $${priceUsd}`;
 					} else {
 						msg = 'Gagal mengambil harga Bitcoin.';
 					}
@@ -358,7 +361,7 @@ export default {
 							session: session,
 						}),
 					});
-					return new Response(JSON.stringify({ status: 'bitcoin sent', price: price }), {
+					return new Response(JSON.stringify({ status: 'bitcoin sent', priceUsd, priceIdr }), {
 						status: 200,
 						headers: { 'Content-Type': 'application/json', ...corsHeaders },
 					});
