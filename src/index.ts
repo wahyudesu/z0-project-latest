@@ -14,6 +14,8 @@ import {
 	checkMathAnswers,
 } from './functions';
 import pantunList from './data/pantun.json';
+import doaHarianList from './data/doaharian.json';
+
 // import assignmentCron from './cron/assignment-cron';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { handleJoinGroupEvent } from './handler/new-group';
@@ -229,6 +231,40 @@ export default {
 						}),
 					});
 					return new Response(JSON.stringify({ status: 'pantun sent', pantun: pantunText }), {
+						status: 200,
+						headers: { 'Content-Type': 'application/json', ...corsHeaders },
+					});
+				} catch (e: any) {
+					return new Response(JSON.stringify({ error: e.message }), {
+						status: 500,
+						headers: { 'Content-Type': 'application/json', ...corsHeaders },
+					});
+				}
+			}
+
+						// Command /doaharian
+			if (text === '/doaharian' && chatId && reply_to) {
+				try {
+					const doaArr = doaHarianList;
+					const idx = Math.floor(Math.random() * doaArr.length);
+					const doa = doaArr[idx];
+					const doaText = `📿 *${doa.title}*\n\n${doa.arabic}\n\n_${doa.latin}_\n\n${doa.translation}`;
+
+					await fetch(baseUrl + '/api/sendText', {
+						method: 'POST',
+						headers: {
+							accept: 'application/json',
+							'Content-Type': 'application/json',
+							'X-Api-Key': APIkey,
+						},
+						body: JSON.stringify({
+							chatId: chatId,
+							reply_to: reply_to,
+							text: doaText,
+							session: session,
+						}),
+					});
+					return new Response(JSON.stringify({ status: 'doa sent', doa: doaText }), {
 						status: 200,
 						headers: { 'Content-Type': 'application/json', ...corsHeaders },
 					});
