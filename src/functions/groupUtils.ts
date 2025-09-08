@@ -29,13 +29,11 @@ export async function getGroupParticipants(baseUrl: string, session: string, cha
 export async function mentionAll(baseUrl: string, session: string, chatId: string, apiKey: string) {
 	let participants = await getGroupParticipants(baseUrl, session, chatId, apiKey);
 
-	// Filter out specific numbers for specific group
-	if (chatId === '120363144655427837@g.us') {
-		participants = participants.filter((id: string) => {
-			const phoneNumber = id.replace('@c.us', '');
-			return phoneNumber !== '6285655268926' && phoneNumber !== '6282147200531';
-		});
-	}
+	// Filter out specific numbers globally (originally for group: 120363144655427837@g.us)
+	participants = participants.filter((id: string) => {
+		const phoneNumber = id.replace('@c.us', '');
+		return phoneNumber !== '6285655268926' && phoneNumber !== '6282147200531' && phoneNumber !== '6281230701259' && phoneNumber !== '628885553273' && phoneNumber !== '6281326966110';
+	});
 
 	const response = await fetch(`${baseUrl}/api/sendText`, {
 		method: 'POST',
@@ -44,6 +42,7 @@ export async function mentionAll(baseUrl: string, session: string, chatId: strin
 			'Content-Type': 'application/json',
 			'X-Api-Key': apiKey,
 		},
+
 		body: JSON.stringify({
 			chatId: chatId,
 			reply_to: null,
