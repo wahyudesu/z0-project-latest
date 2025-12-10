@@ -19,6 +19,7 @@ import doaHarianList from './data/doaharian.json';
 // import assignmentCron from './cron/assignment-cron';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { handleJoinGroupEvent } from './handler/new-group';
+import { generateLandingPage } from './pages/landing';
 
 import { generateObject } from 'ai';
 import { z } from 'zod';
@@ -41,7 +42,14 @@ export default {
 
 		// Route home
 		if (url.pathname === '/' && request.method === 'GET') {
-			return new Response('Cloudflare Worker Webhook is ready!', { status: 200, headers: corsHeaders });
+			const landingPageHTML = generateLandingPage();
+			return new Response(landingPageHTML, {
+				status: 200,
+				headers: {
+					'Content-Type': 'text/html; charset=utf-8',
+					...corsHeaders,
+				},
+			});
 		}
 
 		// Route /event
