@@ -10,15 +10,15 @@
 
 ## 🛡️ Content Moderation
 
-| Feature              | Description                                      | Status        |
-| -------------------- | ------------------------------------------------ | ------------- |
-| Toxic Word Detection | Detect and warn about toxic language in messages | ✅ Implemented |
+| Feature              | Description                                      | Status        | Acc
+| -------------------- | ------------------------------------------------ | ------------- |-------
+| Toxic Word Detection | Detect and warn about toxic language in messages | ✅ Implemented | permanent
 
 ## 🎓 Educational Tools
 
 | Feature              | Description                                          | Status        |
 | -------------------- | ---------------------------------------------------- | ------------- |
-| Math Quiz (`/math`)  | Generate and send math questions to groups           | ✅ Implemented |
+| Math Quiz (`/math`)  | Generate and send math questions to groups           | still error    |
 | AI Assistant (`/ai`) | Answer questions using AI with context from database | ✅ Implemented |
 
 ## 🧰 Utility Commands
@@ -53,18 +53,18 @@
 
 ## 🛠️ Admin Tools
 
-| Feature        | Description                     | Status    |
-| -------------- | ------------------------------- | --------- |
+| Feature        | Description                     | Status     |
+| -------------- | ------------------------------- | ---------  |
 | Admin Controls | Kick, add members, close groups | ⏳ Planned |
 
 ## 🗄️ Database
 
-| Feature               | Description            | Status    |
-| --------------------- | ---------------------- | --------- |
+| Feature               | Description            | Status     |
+| --------------------- | ---------------------- | ---------  |
 | Owner Data Collection | Store group owner data | ⏳ Planned |
 
 ## Notes:
+
 1. ✅ Implemented: Feature is fully functional in the current codebase
 2. ⏳ Planned: Feature is documented in requirements but not yet implemented
 3. Features marked as "planned" are mentioned in `_docs/feature.md` but not found in the current implementation
-

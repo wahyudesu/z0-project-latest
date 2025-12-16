@@ -465,7 +465,7 @@ export default {
 			if (text?.startsWith('/kick') && chatId && reply_to && participant) {
 				try {
 					// Check if user is admin
-					const adminCheck = await isAdmin(baseUrl, session, chatId, participant, APIkey);
+					const adminCheck = await isAdmin(baseUrl, session, chatId, participant, APIkey, env['db-tugas']);
 					if (!adminCheck) {
 						await fetch(baseUrl + '/api/sendText', {
 							method: 'POST',
@@ -559,7 +559,7 @@ export default {
 			if (text?.startsWith('/add') && chatId && reply_to && participant) {
 				try {
 					// Check if user is admin
-					const adminCheck = await isAdmin(baseUrl, session, chatId, participant, APIkey);
+					const adminCheck = await isAdmin(baseUrl, session, chatId, participant, APIkey, env['db-tugas']);
 					if (!adminCheck) {
 						await fetch(baseUrl + '/api/sendText', {
 							method: 'POST',
@@ -658,7 +658,7 @@ export default {
 			if (text === '/closegroup' && chatId && reply_to && participant) {
 				try {
 					// Check if user is admin
-					const adminCheck = await isAdmin(baseUrl, session, chatId, participant, APIkey);
+					const adminCheck = await isAdmin(baseUrl, session, chatId, participant, APIkey, env['db-tugas']);
 					if (!adminCheck) {
 						await fetch(baseUrl + '/api/sendText', {
 							method: 'POST',
@@ -727,7 +727,7 @@ export default {
 			if (text === '/opengroup' && chatId && reply_to && participant) {
 				try {
 					// Check if user is admin
-					const adminCheck = await isAdmin(baseUrl, session, chatId, participant, APIkey);
+					const adminCheck = await isAdmin(baseUrl, session, chatId, participant, APIkey, env['db-tugas']);
 					if (!adminCheck) {
 						await fetch(baseUrl + '/api/sendText', {
 							method: 'POST',
@@ -792,6 +792,96 @@ export default {
 				}
 			}
 
+			// Command /debugadmin - Check admin status (for debugging)
+			if (text === '/debugadmin' && chatId && reply_to && participant) {
+				try {
+					// Get raw participants data to debug
+					const response = await fetch(`${baseUrl}/api/${session}/groups/${chatId}/participants`, {
+						method: 'GET',
+						headers: {
+							accept: '*/*',
+							'X-Api-Key': APIkey,
+						},
+					});
+
+					if (!response.ok) {
+						throw new Error(`Failed to fetch participants: ${response.statusText}`);
+					}
+
+					const participantsJson = (await response.json()) as any[];
+
+					// Find current user in participants
+					const currentUser = participantsJson.find((p: any) => {
+						const phoneId = p.jid || p.id;
+						const formattedId = phoneId?.replace('@s.whatsapp.net', '@c.us') || '';
+						const normalizedUserId = participant.replace('@s.whatsapp.net', '@c.us');
+						return formattedId === normalizedUserId || p.id === normalizedUserId || phoneId === normalizedUserId;
+					});
+
+					const adminCheck = await isAdmin(baseUrl, session, chatId, participant, APIkey, env['db-tugas']);
+
+					// Create detailed debug info
+					let debugInfo = `🔍 *Debug Admin Status*\n\n`;
+					debugInfo += `📱 *Your ID:* ${participant}\n`;
+					debugInfo += `👑 *Admin Status:* ${adminCheck ? '✅ Admin' : '❌ Not Admin'}\n`;
+					debugInfo += `🏠 *Group ID:* ${chatId}\n\n`;
+
+					if (currentUser) {
+						debugInfo += `🔍 *Your User Data:*\n`;
+						debugInfo += `\`\`\`\n${JSON.stringify(currentUser, null, 2)}\n\`\`\`\n\n`;
+
+						debugInfo += `📋 *All Possible Admin Fields:*\n`;
+						Object.keys(currentUser).forEach((key) => {
+							const value = currentUser[key];
+							const isLikelyAdmin =
+								key.toLowerCase().includes('admin') ||
+								key.toLowerCase().includes('role') ||
+								key.toLowerCase().includes('rank') ||
+								key.toLowerCase().includes('level') ||
+								(typeof value === 'string' && value.toLowerCase().includes('admin'));
+
+							debugInfo += `${isLikelyAdmin ? '👑' : '📝'} ${key}: ${JSON.stringify(value)}\n`;
+						});
+					} else {
+						debugInfo += `❌ *User not found in participants list!*\n\n`;
+						debugInfo += `👥 *All Participants:* (${participantsJson.length})\n`;
+						(participantsJson as any[]).slice(0, 5).forEach((p: any, i: number) => {
+							const phoneId = p.jid || p.id;
+							const formattedId = phoneId?.replace('@s.whatsapp.net', '@c.us') || '';
+							debugInfo += `${i + 1}. ${formattedId} - Role: ${p.role || p.rank || 'N/A'}\n`;
+						});
+						if ((participantsJson as any[]).length > 5) {
+							debugInfo += `... and ${(participantsJson as any[]).length - 5} more\n`;
+						}
+					}
+
+					await fetch(baseUrl + '/api/sendText', {
+						method: 'POST',
+						headers: {
+							accept: 'application/json',
+							'Content-Type': 'application/json',
+							'X-Api-Key': APIkey,
+						},
+						body: JSON.stringify({
+							chatId: chatId,
+							reply_to: reply_to,
+							text: debugInfo,
+							session: session,
+						}),
+					});
+
+					return new Response(JSON.stringify({ status: 'debug info sent', isAdmin: adminCheck, currentUser }), {
+						status: 200,
+						headers: { 'Content-Type': 'application/json', ...corsHeaders },
+					});
+				} catch (e: any) {
+					return new Response(JSON.stringify({ error: e.message }), {
+						status: 500,
+						headers: { 'Content-Type': 'application/json', ...corsHeaders },
+					});
+				}
+			}
+
 			if (text === '/dev' && chatId && reply_to) {
 				try {
 					const result = await handleDevInfo(baseUrl, session, APIkey, chatId, reply_to);
@@ -838,6 +928,8 @@ async function handleHelp(baseUrl: string, session: string, APIkey: string, chat
 		'/add <nomor1,nomor2> - Tambahkan member ke grup',
 		'/closegroup - Tutup grup (hanya admin yang bisa chat)',
 		'/opengroup - Buka grup (semua bisa chat)',
+		'/debugadmin - Cek status admin (debug)',
+		'',
 	].join('\n');
 
 	const resp = await fetch(baseUrl + '/api/sendText', {
