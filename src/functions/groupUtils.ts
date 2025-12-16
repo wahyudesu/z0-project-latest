@@ -32,7 +32,13 @@ export async function mentionAll(baseUrl: string, session: string, chatId: strin
 	// Filter out specific numbers globally (originally for group: 120363144655427837@g.us)
 	participants = participants.filter((id: string) => {
 		const phoneNumber = id.replace('@c.us', '').replace('@s.whatsapp.net', '');
-		return phoneNumber !== '6285655268926' && phoneNumber !== '6282147200531' && phoneNumber !== '6281230701259' && phoneNumber !== '628885553273' && phoneNumber !== '6281326966110';
+		return (
+			phoneNumber !== '6285655268926' &&
+			phoneNumber !== '6282147200531' &&
+			phoneNumber !== '6281230701259' &&
+			phoneNumber !== '628885553273' &&
+			phoneNumber !== '6281326966110'
+		);
 	});
 
 	// Buat mention text dengan format @[nomor]
@@ -67,4 +73,120 @@ export async function mentionAll(baseUrl: string, session: string, chatId: strin
 	});
 	const result = await response.json();
 	return result;
+}
+
+// Function to check if user is admin
+export async function isAdmin(baseUrl: string, session: string, chatId: string, userId: string, apiKey: string): Promise<boolean> {
+	try {
+		const response = await fetch(`${baseUrl}/api/${session}/groups/${chatId}/participants`, {
+			method: 'GET',
+			headers: {
+				accept: '*/*',
+				'X-Api-Key': apiKey,
+			},
+		});
+
+		if (!response.ok) {
+			return false;
+		}
+
+		const participantsJson = await response.json();
+		if (!Array.isArray(participantsJson)) {
+			return false;
+		}
+
+		// Find the user and check if they are admin
+		const user = participantsJson.find((p: any) => {
+			const phoneId = p.jid || p.id;
+			const formattedId = phoneId.replace('@s.whatsapp.net', '@c.us');
+			return formattedId === userId || p.id === userId;
+		});
+
+		return user ? user.role === 'admin' || user.role === 'superadmin' : false;
+	} catch (error) {
+		console.error('Error checking admin status:', error);
+		return false;
+	}
+}
+
+// Function to kick member (admin only)
+export async function kickMember(baseUrl: string, session: string, chatId: string, participantId: string, apiKey: string): Promise<any> {
+	const response = await fetch(`${baseUrl}/api/${session}/groups/${chatId}/participants/${participantId}`, {
+		method: 'DELETE',
+		headers: {
+			accept: '*/*',
+			'X-Api-Key': apiKey,
+		},
+	});
+
+	if (!response.ok) {
+		throw new Error(`Failed to kick member: ${response.statusText}`);
+	}
+
+	return await response.json();
+}
+
+// Function to add member (admin only)
+export async function addMember(baseUrl: string, session: string, chatId: string, participantIds: string[], apiKey: string): Promise<any> {
+	const response = await fetch(`${baseUrl}/api/${session}/groups/${chatId}/participants/add`, {
+		method: 'POST',
+		headers: {
+			accept: '*/*',
+			'Content-Type': 'application/json',
+			'X-Api-Key': apiKey,
+		},
+		body: JSON.stringify({
+			participants: participantIds,
+		}),
+	});
+
+	if (!response.ok) {
+		throw new Error(`Failed to add member: ${response.statusText}`);
+	}
+
+	return await response.json();
+}
+
+// Function to close group (admin only)
+export async function closeGroup(baseUrl: string, session: string, chatId: string, apiKey: string): Promise<any> {
+	const response = await fetch(`${baseUrl}/api/${session}/groups/${chatId}/settings`, {
+		method: 'POST',
+		headers: {
+			accept: '*/*',
+			'Content-Type': 'application/json',
+			'X-Api-Key': apiKey,
+		},
+		body: JSON.stringify({
+			announce: true,
+			sendMessages: false,
+		}),
+	});
+
+	if (!response.ok) {
+		throw new Error(`Failed to close group: ${response.statusText}`);
+	}
+
+	return await response.json();
+}
+
+// Function to open group (admin only)
+export async function openGroup(baseUrl: string, session: string, chatId: string, apiKey: string): Promise<any> {
+	const response = await fetch(`${baseUrl}/api/${session}/groups/${chatId}/settings`, {
+		method: 'POST',
+		headers: {
+			accept: '*/*',
+			'Content-Type': 'application/json',
+			'X-Api-Key': apiKey,
+		},
+		body: JSON.stringify({
+			announce: false,
+			sendMessages: true,
+		}),
+	});
+
+	if (!response.ok) {
+		throw new Error(`Failed to open group: ${response.statusText}`);
+	}
+
+	return await response.json();
 }

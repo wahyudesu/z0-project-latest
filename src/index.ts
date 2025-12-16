@@ -12,6 +12,11 @@ import {
 	generateMathQuestions,
 	formatMathQuiz,
 	checkMathAnswers,
+	isAdmin,
+	kickMember,
+	addMember,
+	closeGroup,
+	openGroup,
 } from './functions';
 import pantunList from './data/pantun.json';
 import doaHarianList from './data/doaharian.json';
@@ -19,7 +24,6 @@ import doaHarianList from './data/doaharian.json';
 // import assignmentCron from './cron/assignment-cron';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { handleJoinGroupEvent } from './handler/new-group';
-import { generateLandingPage } from './pages/landing';
 
 import { generateObject } from 'ai';
 import { z } from 'zod';
@@ -40,18 +44,6 @@ export default {
 			return new Response(null, { status: 204, headers: corsHeaders });
 		}
 
-		// Route home
-		if (url.pathname === '/' && request.method === 'GET') {
-			const landingPageHTML = generateLandingPage();
-			return new Response(landingPageHTML, {
-				status: 200,
-				headers: {
-					'Content-Type': 'text/html; charset=utf-8',
-					...corsHeaders,
-				},
-			});
-		}
-
 		// Route /event
 		if (url.pathname === '/event' && request.method === 'POST') {
 			let data: any;
@@ -68,43 +60,43 @@ export default {
 			const text = payload.body;
 			const participant = payload.participant;
 			const reply_to = payload.id;
-			
+
 			// Handle group join events
-			if (data.event === "group.v2.participants") {
-			  const groupPayload = data.payload;
-			  if (groupPayload.type === "join" && groupPayload.group && groupPayload.participants) {
-				const groupId = groupPayload.group.id;
-				const joinedParticipants = groupPayload.participants;
+			if (data.event === 'group.v2.participants') {
+				const groupPayload = data.payload;
+				if (groupPayload.type === 'join' && groupPayload.group && groupPayload.participants) {
+					const groupId = groupPayload.group.id;
+					const joinedParticipants = groupPayload.participants;
 
-				for (const participant of joinedParticipants) {
-				  const participantId = participant.id;
-				  const welcomeMessage = `👋 Selamat datang @${participantId.replace("@c.us", "")}!\n\nSemoga betah dan aktif ya! 😊`;
+					for (const participant of joinedParticipants) {
+						const participantId = participant.id;
+						const welcomeMessage = `👋 Selamat datang @${participantId.replace('@c.us', '')}!\n\nSemoga betah dan aktif ya! 😊`;
 
-				  try {
-					await fetch(baseUrl + "/api/sendText", {
-					  method: "POST",
-					  headers: {
-						"accept": "application/json",
-						"Content-Type": "application/json",
-						"X-Api-Key": APIkey,
-					  },
-					  body: JSON.stringify({
-						chatId: groupId,
-						text: welcomeMessage,
-						session: session,
-						mentions: [participantId],
-					  }),
+						try {
+							await fetch(baseUrl + '/api/sendText', {
+								method: 'POST',
+								headers: {
+									accept: 'application/json',
+									'Content-Type': 'application/json',
+									'X-Api-Key': APIkey,
+								},
+								body: JSON.stringify({
+									chatId: groupId,
+									text: welcomeMessage,
+									session: session,
+									mentions: [participantId],
+								}),
+							});
+						} catch (error) {
+							console.error('Error sending welcome message:', error);
+						}
+					}
+
+					return new Response(JSON.stringify({ status: 'welcome message sent' }), {
+						status: 200,
+						headers: { 'Content-Type': 'application/json', ...corsHeaders },
 					});
-				  } catch (error) {
-					console.error("Error sending welcome message:", error);
-				  }
 				}
-
-				return new Response(JSON.stringify({ status: "welcome message sent" }), {
-				  status: 200,
-				  headers: { "Content-Type": "application/json", ...corsHeaders }
-				});
-			  }
 			}
 
 			// Deteksi toxic sebelum proses lain
@@ -222,7 +214,7 @@ export default {
 					const idx = Math.floor(Math.random() * pantunArr.length);
 					const pantun = pantunArr[idx];
 					// Gabungkan baris pantun
-					const pantunText = pantun.map(bait => bait.join('\n')).join('\n\n');
+					const pantunText = pantun.map((bait) => bait.join('\n')).join('\n\n');
 
 					await fetch(baseUrl + '/api/sendText', {
 						method: 'POST',
@@ -252,7 +244,6 @@ export default {
 
 			if (text === '/button' && chatId && reply_to) {
 				try {
-
 					await fetch(baseUrl + '/api/sendText', {
 						method: 'POST',
 						headers: {
@@ -262,29 +253,29 @@ export default {
 						},
 						body: JSON.stringify({
 							chatId: chatId,
-							header: "How are you?",
-							body: "Tell us how are you please 🙏",
-							footer: "If you have any questions, please send it in the chat",
+							header: 'How are you?',
+							body: 'Tell us how are you please 🙏',
+							footer: 'If you have any questions, please send it in the chat',
 							buttons: [
 								{
-									"type": "reply",
-									"text": "I am good!"
+									type: 'reply',
+									text: 'I am good!',
 								},
 								{
-									"type": "call",
-									"text": "Call us",
-									"phoneNumber": "+1234567890"
+									type: 'call',
+									text: 'Call us',
+									phoneNumber: '+1234567890',
 								},
 								{
-									"type": "copy",
-									"text": "Copy code",
-									"copyCode": "4321"
+									type: 'copy',
+									text: 'Copy code',
+									copyCode: '4321',
 								},
 								{
-									"type": "url",
-									"text": "How did you do that?",
-									"url": "https://waha.devlike.pro"
-								}
+									type: 'url',
+									text: 'How did you do that?',
+									url: 'https://waha.devlike.pro',
+								},
 							],
 							reply_to: reply_to,
 							session: session,
@@ -381,7 +372,7 @@ export default {
 				}
 			}
 
-						if (text === '/bitcoin' && chatId && reply_to) {
+			if (text === '/bitcoin' && chatId && reply_to) {
 				try {
 					// Fetch USD price
 					const respUsd = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
@@ -430,11 +421,11 @@ export default {
 				try {
 					const questions = generateMathQuestions(3);
 					const mathQuiz = formatMathQuiz(questions);
-					
+
 					// Store questions in a simple in-memory store (ideally use database)
 					const quizKey = `${chatId}_${reply_to}_math`;
 					// You would store questions[quizKey] = questions in a database
-					
+
 					await fetch(baseUrl + '/api/sendText', {
 						method: 'POST',
 						headers: {
@@ -470,6 +461,337 @@ export default {
 			//   }
 			// }
 
+			// Command /kick - Kick member (admin only)
+			if (text?.startsWith('/kick') && chatId && reply_to && participant) {
+				try {
+					// Check if user is admin
+					const adminCheck = await isAdmin(baseUrl, session, chatId, participant, APIkey);
+					if (!adminCheck) {
+						await fetch(baseUrl + '/api/sendText', {
+							method: 'POST',
+							headers: {
+								accept: 'application/json',
+								'Content-Type': 'application/json',
+								'X-Api-Key': APIkey,
+							},
+							body: JSON.stringify({
+								chatId: chatId,
+								reply_to: reply_to,
+								text: '❌ Maaf, hanya admin yang bisa menggunakan perintah ini.',
+								session: session,
+							}),
+						});
+						return new Response(JSON.stringify({ status: 'access denied' }), {
+							status: 200,
+							headers: { 'Content-Type': 'application/json', ...corsHeaders },
+						});
+					}
+
+					// Extract number from command
+					const targetNumber = text.replace('/kick', '').trim();
+					if (!targetNumber) {
+						await fetch(baseUrl + '/api/sendText', {
+							method: 'POST',
+							headers: {
+								accept: 'application/json',
+								'Content-Type': 'application/json',
+								'X-Api-Key': APIkey,
+							},
+							body: JSON.stringify({
+								chatId: chatId,
+								reply_to: reply_to,
+								text: '⚠️ Format: /kick <nomor_telepon>\nContoh: /kick 628123456789',
+								session: session,
+							}),
+						});
+						return new Response(JSON.stringify({ status: 'invalid format' }), {
+							status: 200,
+							headers: { 'Content-Type': 'application/json', ...corsHeaders },
+						});
+					}
+
+					const targetId = `${targetNumber}@c.us`;
+					const result = await kickMember(baseUrl, session, chatId, targetId, APIkey);
+
+					await fetch(baseUrl + '/api/sendText', {
+						method: 'POST',
+						headers: {
+							accept: 'application/json',
+							'Content-Type': 'application/json',
+							'X-Api-Key': APIkey,
+						},
+						body: JSON.stringify({
+							chatId: chatId,
+							reply_to: reply_to,
+							text: `✅ Berhasil mengkick @${targetNumber} dari grup`,
+							session: session,
+							mentions: [targetId],
+						}),
+					});
+
+					return new Response(JSON.stringify({ status: 'member kicked', result }), {
+						status: 200,
+						headers: { 'Content-Type': 'application/json', ...corsHeaders },
+					});
+				} catch (e: any) {
+					await fetch(baseUrl + '/api/sendText', {
+						method: 'POST',
+						headers: {
+							accept: 'application/json',
+							'Content-Type': 'application/json',
+							'X-Api-Key': APIkey,
+						},
+						body: JSON.stringify({
+							chatId: chatId,
+							reply_to: reply_to,
+							text: `❌ Gagal mengkick member: ${e.message}`,
+							session: session,
+						}),
+					});
+					return new Response(JSON.stringify({ error: e.message }), {
+						status: 500,
+						headers: { 'Content-Type': 'application/json', ...corsHeaders },
+					});
+				}
+			}
+
+			// Command /add - Add member (admin only)
+			if (text?.startsWith('/add') && chatId && reply_to && participant) {
+				try {
+					// Check if user is admin
+					const adminCheck = await isAdmin(baseUrl, session, chatId, participant, APIkey);
+					if (!adminCheck) {
+						await fetch(baseUrl + '/api/sendText', {
+							method: 'POST',
+							headers: {
+								accept: 'application/json',
+								'Content-Type': 'application/json',
+								'X-Api-Key': APIkey,
+							},
+							body: JSON.stringify({
+								chatId: chatId,
+								reply_to: reply_to,
+								text: '❌ Maaf, hanya admin yang bisa menggunakan perintah ini.',
+								session: session,
+							}),
+						});
+						return new Response(JSON.stringify({ status: 'access denied' }), {
+							status: 200,
+							headers: { 'Content-Type': 'application/json', ...corsHeaders },
+						});
+					}
+
+					// Extract numbers from command
+					const targetNumbers = text
+						.replace('/add', '')
+						.trim()
+						.split(/[\s,]+/)
+						.filter((n: string) => n);
+					if (targetNumbers.length === 0) {
+						await fetch(baseUrl + '/api/sendText', {
+							method: 'POST',
+							headers: {
+								accept: 'application/json',
+								'Content-Type': 'application/json',
+								'X-Api-Key': APIkey,
+							},
+							body: JSON.stringify({
+								chatId: chatId,
+								reply_to: reply_to,
+								text: '⚠️ Format: /add <nomor_telepon1,nomor_telepon2>\nContoh: /add 628123456789,628987654321',
+								session: session,
+							}),
+						});
+						return new Response(JSON.stringify({ status: 'invalid format' }), {
+							status: 200,
+							headers: { 'Content-Type': 'application/json', ...corsHeaders },
+						});
+					}
+
+					const targetIds = targetNumbers.map((num: string) => `${num}@c.us`);
+					const result = await addMember(baseUrl, session, chatId, targetIds, APIkey);
+
+					const mentionsText = targetNumbers.map((num: string) => `@${num}`).join(', ');
+					await fetch(baseUrl + '/api/sendText', {
+						method: 'POST',
+						headers: {
+							accept: 'application/json',
+							'Content-Type': 'application/json',
+							'X-Api-Key': APIkey,
+						},
+						body: JSON.stringify({
+							chatId: chatId,
+							reply_to: reply_to,
+							text: `✅ Berhasil menambahkan ${mentionsText} ke grup`,
+							session: session,
+							mentions: targetIds,
+						}),
+					});
+
+					return new Response(JSON.stringify({ status: 'members added', result }), {
+						status: 200,
+						headers: { 'Content-Type': 'application/json', ...corsHeaders },
+					});
+				} catch (e: any) {
+					await fetch(baseUrl + '/api/sendText', {
+						method: 'POST',
+						headers: {
+							accept: 'application/json',
+							'Content-Type': 'application/json',
+							'X-Api-Key': APIkey,
+						},
+						body: JSON.stringify({
+							chatId: chatId,
+							reply_to: reply_to,
+							text: `❌ Gagal menambahkan member: ${e.message}`,
+							session: session,
+						}),
+					});
+					return new Response(JSON.stringify({ error: e.message }), {
+						status: 500,
+						headers: { 'Content-Type': 'application/json', ...corsHeaders },
+					});
+				}
+			}
+
+			// Command /closegroup - Close group (admin only)
+			if (text === '/closegroup' && chatId && reply_to && participant) {
+				try {
+					// Check if user is admin
+					const adminCheck = await isAdmin(baseUrl, session, chatId, participant, APIkey);
+					if (!adminCheck) {
+						await fetch(baseUrl + '/api/sendText', {
+							method: 'POST',
+							headers: {
+								accept: 'application/json',
+								'Content-Type': 'application/json',
+								'X-Api-Key': APIkey,
+							},
+							body: JSON.stringify({
+								chatId: chatId,
+								reply_to: reply_to,
+								text: '❌ Maaf, hanya admin yang bisa menggunakan perintah ini.',
+								session: session,
+							}),
+						});
+						return new Response(JSON.stringify({ status: 'access denied' }), {
+							status: 200,
+							headers: { 'Content-Type': 'application/json', ...corsHeaders },
+						});
+					}
+
+					const result = await closeGroup(baseUrl, session, chatId, APIkey);
+
+					await fetch(baseUrl + '/api/sendText', {
+						method: 'POST',
+						headers: {
+							accept: 'application/json',
+							'Content-Type': 'application/json',
+							'X-Api-Key': APIkey,
+						},
+						body: JSON.stringify({
+							chatId: chatId,
+							reply_to: reply_to,
+							text: '🔒 Grup telah ditutup. Hanya admin yang dapat mengirim pesan.',
+							session: session,
+						}),
+					});
+
+					return new Response(JSON.stringify({ status: 'group closed', result }), {
+						status: 200,
+						headers: { 'Content-Type': 'application/json', ...corsHeaders },
+					});
+				} catch (e: any) {
+					await fetch(baseUrl + '/api/sendText', {
+						method: 'POST',
+						headers: {
+							accept: 'application/json',
+							'Content-Type': 'application/json',
+							'X-Api-Key': APIkey,
+						},
+						body: JSON.stringify({
+							chatId: chatId,
+							reply_to: reply_to,
+							text: `❌ Gagal menutup grup: ${e.message}`,
+							session: session,
+						}),
+					});
+					return new Response(JSON.stringify({ error: e.message }), {
+						status: 500,
+						headers: { 'Content-Type': 'application/json', ...corsHeaders },
+					});
+				}
+			}
+
+			// Command /opengroup - Open group (admin only)
+			if (text === '/opengroup' && chatId && reply_to && participant) {
+				try {
+					// Check if user is admin
+					const adminCheck = await isAdmin(baseUrl, session, chatId, participant, APIkey);
+					if (!adminCheck) {
+						await fetch(baseUrl + '/api/sendText', {
+							method: 'POST',
+							headers: {
+								accept: 'application/json',
+								'Content-Type': 'application/json',
+								'X-Api-Key': APIkey,
+							},
+							body: JSON.stringify({
+								chatId: chatId,
+								reply_to: reply_to,
+								text: '❌ Maaf, hanya admin yang bisa menggunakan perintah ini.',
+								session: session,
+							}),
+						});
+						return new Response(JSON.stringify({ status: 'access denied' }), {
+							status: 200,
+							headers: { 'Content-Type': 'application/json', ...corsHeaders },
+						});
+					}
+
+					const result = await openGroup(baseUrl, session, chatId, APIkey);
+
+					await fetch(baseUrl + '/api/sendText', {
+						method: 'POST',
+						headers: {
+							accept: 'application/json',
+							'Content-Type': 'application/json',
+							'X-Api-Key': APIkey,
+						},
+						body: JSON.stringify({
+							chatId: chatId,
+							reply_to: reply_to,
+							text: '🔓 Grup telah dibuka. Semua anggota dapat mengirim pesan.',
+							session: session,
+						}),
+					});
+
+					return new Response(JSON.stringify({ status: 'group opened', result }), {
+						status: 200,
+						headers: { 'Content-Type': 'application/json', ...corsHeaders },
+					});
+				} catch (e: any) {
+					await fetch(baseUrl + '/api/sendText', {
+						method: 'POST',
+						headers: {
+							accept: 'application/json',
+							'Content-Type': 'application/json',
+							'X-Api-Key': APIkey,
+						},
+						body: JSON.stringify({
+							chatId: chatId,
+							reply_to: reply_to,
+							text: `❌ Gagal membuka grup: ${e.message}`,
+							session: session,
+						}),
+					});
+					return new Response(JSON.stringify({ error: e.message }), {
+						status: 500,
+						headers: { 'Content-Type': 'application/json', ...corsHeaders },
+					});
+				}
+			}
+
 			if (text === '/dev' && chatId && reply_to) {
 				try {
 					const result = await handleDevInfo(baseUrl, session, APIkey, chatId, reply_to);
@@ -482,11 +804,11 @@ export default {
 				}
 			}
 
-			if (data.event === "group.v2.join") {
+			if (data.event === 'group.v2.join') {
 				await handleJoinGroupEvent(data, env);
-				return new Response(JSON.stringify({ status: "group join processed" }), {
+				return new Response(JSON.stringify({ status: 'group join processed' }), {
 					status: 200,
-					headers: { "Content-Type": "application/json", ...corsHeaders }
+					headers: { 'Content-Type': 'application/json', ...corsHeaders },
 				});
 			}
 
@@ -495,20 +817,27 @@ export default {
 
 		return new Response('Not found', { status: 404, headers: corsHeaders });
 	},
-
 };
-
 
 async function handleHelp(baseUrl: string, session: string, APIkey: string, chatId: string, reply_to: string) {
 	const helpText = [
 		'🤖 *Daftar Perintah Bot*',
 		'',
-		'/presensi - Mention semua anggota grup',
-		'/malam - Kirim ucapan selamat malam (khusus admin)',
-		'/pagi - Kirim ucapan selamat pagi (khusus admin)',
+		'📋 *Umum*',
+		'/tagall - Mention semua anggota grup',
 		'/ai <pertanyaan> - Tanya AI tentang tugas/kuliah',
+		'/pantun - Dapatkan pantun acak',
+		'/doaharian - Dapatkan doa harian',
+		'/bitcoin - Cek harga Bitcoin',
+		'/math - Kuis matematika',
 		'/dev - Info developer',
 		'/help - Tampilkan bantuan ini',
+		'',
+		'👑 *Admin Only*',
+		'/kick <nomor> - Kick member dari grup',
+		'/add <nomor1,nomor2> - Tambahkan member ke grup',
+		'/closegroup - Tutup grup (hanya admin yang bisa chat)',
+		'/opengroup - Buka grup (semua bisa chat)',
 	].join('\n');
 
 	const resp = await fetch(baseUrl + '/api/sendText', {
@@ -529,4 +858,3 @@ async function handleHelp(baseUrl: string, session: string, APIkey: string, chat
 	const result = await resp.json();
 	return { status: 'help sent', result };
 }
-
